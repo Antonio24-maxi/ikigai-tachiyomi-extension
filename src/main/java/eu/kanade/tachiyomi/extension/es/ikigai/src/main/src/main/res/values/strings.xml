@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Ikigai</string>
+    <string name="ext_name">Ikigai</string>
+    <string name="ext_description">Extensión para leer mangas y novelas desde Ikigai Mangas</string>
+</resources>
