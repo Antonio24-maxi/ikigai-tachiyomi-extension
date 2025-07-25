@@ -1,0 +1,504 @@
+name: Build Ikigai Extension
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Set up JDK 11
+      uses: actions/setup-java@v3
+      with:
+        java-version: '11'
+        distribution: 'temurin'
+        
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v2
+      
+    - name: Create gradle wrapper
+      run: |
+        mkdir -p gradle/wrapper
+        echo "distributionBase=GRADLE_USER_HOME" > gradle/wrapper/gradle-wrapper.properties
+        echo "distributionPath=wrapper/dists" >> gradle/wrapper/gradle-wrapper.properties
+        echo "distributionUrl=https\://services.gradle.org/distributions/gradle-7.4.2-bin.zip" >> gradle/wrapper/gradle-wrapper.properties
+        echo "zipStoreBase=GRADLE_USER_HOME" >> gradle/wrapper/gradle-wrapper.properties
+        echo "zipStorePath=wrapper/dists" >> gradle/wrapper/gradle-wrapper.properties
+        
+    - name: Create gradlew
+      run: |
+        cat > gradlew << 'EOF'
+        #!/usr/bin/env sh
+        ##############################################################################
+        ##
+        ##  Gradle start up script for UN*X
+        ##
+        ##############################################################################
+        
+        # Resolve links: $0 may be a link
+        PRG="$0"
+        # Need this for relative symlinks.
+        while [ -h "$PRG" ] ; do
+            ls=`ls -ld "$PRG"`
+            link=`expr "$ls" : '.*-> \(.*\)$'`
+            if expr "$link" : '/.*' > /dev/null; then
+                PRG="$link"
+            else
+                PRG=`dirname "$PRG"`"/$link"
+            fi
+        done
+        SAVED="`pwd`"
+        cd "`dirname \"$PRG\"`/" >/dev/null
+        APP_HOME="`pwd -P`"
+        cd "$SAVED" >/dev/null
+        
+        APP_NAME="Gradle"
+        APP_BASE_NAME=`basename "$0"`
+        
+        # This is normally unused
+        # shellcheck disable=SC2034
+        APP_PID=$$
+        
+        # Default JVM options.
+        DEFAULT_JVM_OPTS='"-Xmx64m" "-Xms64m"'
+        
+        # Use the maximum available, or set MAX_FD != -1 to use that value.
+        MAX_FD="maximum"
+        
+        warn () {
+            echo "$*"
+        }
+        
+        die () {
+            echo
+            echo "$*"
+            echo
+            exit 1
+        }
+        
+        # OS specific support (must be 'true' or 'false').
+        cygwin=false
+        msys=false
+        darwin=false
+        nonstop=false
+        case "`uname`" in
+          CYGWIN* )
+            cygwin=true
+            ;;
+          Darwin* )
+            darwin=true
+            ;;
+          MINGW* )
+            msys=true
+            ;;
+          NONSTOP* )
+            nonstop=true
+            ;;
+        esac
+        
+        CLASSPATH=$APP_HOME/gradle/wrapper/gradle-wrapper.jar
+        
+        # Determine the Java command to use to start the JVM.
+        if [ -n "$JAVA_HOME" ] ; then
+            if [ -x "$JAVA_HOME/jre/sh/java" ] ; then
+                # IBM's JDK on AIX uses strange locations for the executables
+                JAVACMD="$JAVA_HOME/jre/sh/java"
+            else
+                JAVACMD="$JAVA_HOME/bin/java"
+            fi
+            if [ ! -x "$JAVACMD" ] ; then
+                die "ERROR: JAVA_HOME is set to an invalid directory: $JAVA_HOME
+        
+        Please set the JAVA_HOME variable in your environment to match the
+        location of your Java installation."
+            fi
+        else
+            JAVACMD="java"
+            which java >/dev/null 2>&1 || die "ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH.
+        
+        Please set the JAVA_HOME variable in your environment to match the
+        location of your Java installation."
+        fi
+        
+        # Increase the maximum file descriptors if we can.
+        if [ "$cygwin" = "false" -a "$darwin" = "false" -a "$nonstop" = "false" ] ; then
+            MAX_FD_LIMIT=`ulimit -H -n`
+            if [ $? -eq 0 ] ; then
+                if [ "$MAX_FD" = "maximum" -o "$MAX_FD" = "max" ] ; then
+                    MAX_FD="$MAX_FD_LIMIT"
+                fi
+                ulimit -n $MAX_FD
+                if [ $? -ne 0 ] ; then
+                    warn "Could not set maximum file descriptor limit: $MAX_FD"
+                fi
+            else
+                warn "Could not query maximum file descriptor limit: $MAX_FD_LIMIT"
+            fi
+        fi
+        
+        # For Darwin, add options to specify how the application appears in the dock
+        if [ "$darwin" = "true" ]; then
+            GRADLE_OPTS="$GRADLE_OPTS \"-Xdock:name=$APP_NAME\" \"-Xdock:icon=$APP_HOME/media/gradle.icns\""
+        fi
+        
+        # For Cygwin or MSYS, switch paths to Windows format before running java
+        if [ "$cygwin" = "true" -o "$msys" = "true" ] ; then
+            APP_HOME=`cygpath --path --mixed "$APP_HOME"`
+            CLASSPATH=`cygpath --path --mixed "$CLASSPATH"`
+            
+            JAVACMD=`cygpath --unix "$JAVACMD"`
+        
+            # We build the pattern for arguments to be converted via cygpath
+            ROOTDIRSRAW=`find -L / -maxdepth 1 -mindepth 1 -type d 2>/dev/null`
+            SEP=""
+            for dir in $ROOTDIRSRAW ; do
+                ROOTDIRS="$ROOTDIRS$SEP$dir"
+                SEP="|"
+            done
+            OURCYGPATTERN="(^($ROOTDIRS))"
+            # Add a user-defined pattern to the cygpath arguments
+            if [ "$GRADLE_CYGPATTERN" != "" ] ; then
+                OURCYGPATTERN="$OURCYGPATTERN|($GRADLE_CYGPATTERN)"
+            fi
+            # Now convert the arguments - kludge to limit ourselves to /bin/sh
+            i=0
+            for arg in "$@" ; do
+                CHECK=`echo "$arg"|egrep -c "$OURCYGPATTERN" -`
+                CHECK2=`echo "$arg"|egrep -c "^-"`                                 ### Determine if an option
+        
+                if [ $CHECK -ne 0 ] && [ $CHECK2 -eq 0 ] ; then                    ### Added a condition
+                    eval `echo args$i`=`cygpath --path --ignore --mixed "$arg"`
+                else
+                    eval `echo args$i`="\"$arg\""
+                fi
+                i=`expr $i + 1`
+            done
+            case $i in
+                0) set -- ;;
+                1) set -- "$args0" ;;
+                2) set -- "$args0" "$args1" ;;
+                3) set -- "$args0" "$args1" "$args2" ;;
+                4) set -- "$args0" "$args1" "$args2" "$args3" ;;
+                5) set -- "$args0" "$args1" "$args2" "$args3" "$args4" ;;
+                6) set -- "$args0" "$args1" "$args2" "$args3" "$args4" "$args5" ;;
+                7) set -- "$args0" "$args1" "$args2" "$args3" "$args4" "$args5" "$args6" ;;
+                8) set -- "$args0" "$args1" "$args2" "$args3" "$args4" "$args5" "$args6" "$args7" ;;
+                9) set -- "$args0" "$args1" "$args2" "$args3" "$args4" "$args5" "$args6" "$args7" "$args8" ;;
+            esac
+        fi
+        
+        # Escape application args
+        save () {
+            for i do printf %s\\n "$i" | sed "s/'/'\\\\''/g;1s/^/'/;\$s/\$/' \\\\/" ; done
+            echo " "
+        }
+        APP_ARGS=`save "$@"`
+        
+        # Collect all arguments for the java command
+        eval set -- $DEFAULT_JVM_OPTS $JAVA_OPTS $GRADLE_OPTS "\"-Dorg.gradle.appname=$APP_BASE_NAME\"" -classpath "\"$CLASSPATH\"" org.gradle.wrapper.GradleWrapperMain "$APP_ARGS"
+        
+        exec "$JAVACMD" "$@"
+        EOF
+        chmod +x gradlew
+        
+    - name: Create settings.gradle
+      run: |
+        echo "rootProject.name = 'ikigai-extension'" > settings.gradle
+        
+    - name: Update build.gradle for GitHub Actions
+      run: |
+        cat > build.gradle << 'EOF'
+        plugins {
+            id 'com.android.application' version '7.3.0'
+            id 'org.jetbrains.kotlin.android' version '1.7.10'
+        }
+
+        android {
+            namespace 'eu.kanade.tachiyomi.extension.es.ikigai'
+            compileSdk 33
+
+            defaultConfig {
+                applicationId "eu.kanade.tachiyomi.extension.es.ikigai"
+                minSdk 21
+                targetSdk 33
+                versionCode 1
+                versionName "1.0.0"
+            }
+
+            buildTypes {
+                release {
+                    minifyEnabled false
+                    proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+                }
+            }
+            
+            compileOptions {
+                sourceCompatibility JavaVersion.VERSION_1_8
+                targetCompatibility JavaVersion.VERSION_1_8
+            }
+            
+            kotlinOptions {
+                jvmTarget = '1.8'
+            }
+        }
+
+        repositories {
+            google()
+            mavenCentral()
+            maven { url 'https://www.jitpack.io' }
+        }
+
+        dependencies {
+            implementation 'androidx.core:core-ktx:1.8.0'
+            implementation 'androidx.preference:preference-ktx:1.2.0'
+            implementation 'com.squareup.okhttp3:okhttp:4.10.0'
+            implementation 'org.jsoup:jsoup:1.15.3'
+            implementation 'com.github.inorichi.injekt:injekt-core:65b0440'
+        }
+        EOF
+        
+    - name: Update Ikigai.kt for standalone compilation
+      run: |
+        mkdir -p src/main/java/eu/kanade/tachiyomi/extension/es/ikigai
+        cat > src/main/java/eu/kanade/tachiyomi/extension/es/ikigai/Ikigai.kt << 'EOF'
+        package eu.kanade.tachiyomi.extension.es.ikigai
+
+        import android.app.Application
+        import android.content.SharedPreferences
+        import androidx.preference.ListPreference
+        import androidx.preference.PreferenceScreen
+        import eu.kanade.tachiyomi.source.ConfigurableSource
+        import eu.kanade.tachiyomi.source.model.*
+        import eu.kanade.tachiyomi.network.GET
+        import okhttp3.*
+        import org.jsoup.Jsoup
+        import org.jsoup.nodes.Document
+        import org.jsoup.nodes.Element
+        import rx.Observable
+        import uy.kohesive.injekt.Injectekt
+        import uy.kohesive.injekt.api.get
+        import java.text.SimpleDateFormat
+        import java.util.*
+        import android.util.Base64
+
+        class Ikigai : ConfigurableSource {
+
+            override val name = "Ikigai"
+            override val baseUrl = "https://lectorikigai.eltanews.com"
+            override val lang = "es"
+            override val supportsLatest = true
+            override val id: Long = 1234567890
+
+            private val client = OkHttpClient()
+
+            private val preferences: SharedPreferences by lazy {
+                Injectekt.get<Application>().getSharedPreferences("source_$id", 0x0000)
+            }
+
+            override fun headersBuilder(): Headers.Builder = Headers.Builder()
+                .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+                .add("Referer", baseUrl)
+
+            private val headers = headersBuilder().build()
+
+            // ============================== Popular ===============================
+            override fun popularMangaRequest(page: Int): Request {
+                return GET("$baseUrl/?pagina=$page&orden=popular", headers)
+            }
+
+            override fun popularMangaParse(response: Response): MangasPage {
+                val document = response.asJsoup()
+                val mangas = document.select("div.series-item, div.manga-item").map { element ->
+                    popularMangaFromElement(element)
+                }
+                val hasNextPage = document.select("a.next-page, .pagination a[rel=next]").isNotEmpty()
+                return MangasPage(mangas, hasNextPage)
+            }
+
+            private fun popularMangaFromElement(element: Element): SManga {
+                return SManga.create().apply {
+                    title = element.select("h3 a, .series-title a, .manga-title").text()
+                    setUrlWithoutDomain(element.select("a").attr("href"))
+                    thumbnail_url = element.select("img").attr("abs:src")
+                    description = element.select(".series-summary, .manga-summary").text()
+                }
+            }
+
+            // ============================== Latest ===============================
+            override fun latestUpdatesRequest(page: Int): Request {
+                return GET("$baseUrl/?pagina=$page&orden=updated", headers)
+            }
+
+            override fun latestUpdatesParse(response: Response): MangasPage = popularMangaParse(response)
+
+            // ============================== Search ===============================
+            override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
+                val url = HttpUrl.parse("$baseUrl/")!!.newBuilder()
+                
+                if (query.isNotEmpty()) {
+                    url.addQueryParameter("buscar", query)
+                }
+                
+                url.addQueryParameter("pagina", page.toString())
+                
+                filters.forEach { filter ->
+                    when (filter) {
+                        is GenreFilter -> {
+                            if (filter.state != 0) {
+                                url.addQueryParameter("genero", filter.toUriPart())
+                            }
+                        }
+                        is StatusFilter -> {
+                            if (filter.state != 0) {
+                                url.addQueryParameter("estado", filter.toUriPart())
+                            }
+                        }
+                        is TypeFilter -> {
+                            if (filter.state != 0) {
+                                url.addQueryParameter("tipo", filter.toUriPart())
+                            }
+                        }
+                        is SortFilter -> {
+                            url.addQueryParameter("orden", filter.toUriPart())
+                        }
+                    }
+                }
+                
+                return GET(url.toString(), headers)
+            }
+
+            override fun searchMangaParse(response: Response): MangasPage = popularMangaParse(response)
+
+            // ============================== Filters ===============================
+            override fun getFilterList() = FilterList(
+                Filter.Header("Usa los filtros para refinar tu búsqueda"),
+                GenreFilter(),
+                StatusFilter(), 
+                TypeFilter(),
+                SortFilter()
+            )
+
+            private class GenreFilter : UriPartFilter(
+                "Género",
+                arrayOf(
+                    Pair("Todos", ""),
+                    Pair("Acción", "accion"),
+                    Pair("Aventura", "aventura"),
+                    Pair("Comedia", "comedia"),
+                    Pair("Drama", "drama"),
+                    Pair("Fantasía", "fantasia"),
+                    Pair("Romance", "romance"),
+                    Pair("Shounen", "shounen")
+                )
+            )
+
+            private class StatusFilter : UriPartFilter(
+                "Estado",
+                arrayOf(
+                    Pair("Todos", ""),
+                    Pair("En emisión", "ongoing"),
+                    Pair("Completado", "completed"),
+                    Pair("Pausado", "hiatus")
+                )
+            )
+
+            private class TypeFilter : UriPartFilter(
+                "Tipo",
+                arrayOf(
+                    Pair("Todos", ""),
+                    Pair("Manga", "manga"),
+                    Pair("Novela", "novela")
+                )
+            )
+
+            private class SortFilter : UriPartFilter(
+                "Ordenar por",
+                arrayOf(
+                    Pair("Más popular", "popular"),
+                    Pair("Más reciente", "updated"),
+                    Pair("A-Z", "title")
+                )
+            )
+
+            private open class UriPartFilter(displayName: String, val vals: Array<Pair<String, String>>) :
+                Filter.Select<String>(displayName, vals.map { it.first }.toTypedArray()) {
+                fun toUriPart() = vals[state].second
+            }
+
+            // ============================== Details ===============================
+            override fun mangaDetailsRequest(manga: SManga): Request {
+                return GET(baseUrl + manga.url, headers)
+            }
+
+            override fun mangaDetailsParse(response: Response): SManga {
+                val document = response.asJsoup()
+                return SManga.create().apply {
+                    title = document.select("h1.series-title, h1.manga-title").text()
+                    author = document.select(".series-author, .manga-author").text()
+                    artist = document.select(".series-artist, .manga-artist").text()
+                    status = parseStatus(document.select(".series-status, .manga-status").text())
+                    genre = document.select(".series-genres a, .manga-genres a").joinToString { it.text() }
+                    description = document.select(".series-summary, .manga-summary").text()
+                    thumbnail_url = document.select(".series-cover img, .manga-cover img").attr("abs:src")
+                }
+            }
+
+            private fun parseStatus(status: String): Int = when {
+                status.contains("En emisión", ignoreCase = true) -> SManga.ONGOING
+                status.contains("Completado", ignoreCase = true) -> SManga.COMPLETED
+                status.contains("Pausado", ignoreCase = true) -> SManga.ON_HIATUS
+                else -> SManga.UNKNOWN
+            }
+
+            // ============================== Chapters ===============================
+            override fun chapterListRequest(manga: SManga): Request {
+                return GET(baseUrl + manga.url, headers)
+            }
+
+            override fun chapterListParse(response: Response): List<SChapter> {
+                val document = response.asJsoup()
+                return document.select(".chapter-list li, .chapters-list li").map { element ->
+                    SChapter.create().apply {
+                        name = element.select("a").text()
+                        setUrlWithoutDomain(element.select("a").attr("href"))
+                        date_upload = parseChapterDate(element.select(".chapter-date").text())
+                    }
+                }.reversed()
+            }
+
+            private fun parseChapterDate(date: String): Long {
+                return try {
+                    when {
+                        date.contains("hace") -> {
+                            val now = Calendar.getInstance().timeInMillis
+                            when {
+                                date.contains("minuto") -> now - (date.filter { it.isDigit() }.toIntOrNull() ?: 0) * 60_000L
+                                date.contains("hora") -> now - (date.filter { it.isDigit() }.toIntOrNull() ?: 0) * 3_600_000L
+                                date.contains("día") -> now - (date.filter { it.isDigit() }.toIntOrNull() ?: 0) * 86_400_000L
+                                else -> now
+                            }
+                        }
+                        else -> {
+                            val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                            dateFormat.parse(date)?.time ?: 0L
+                        }
+                    }
+                } catch (e: Exception) {
+                    0L
+                }
+            }
+
+            // ============================== Pages ===============================
+            override fun pageListRequest(chapter: SChapter): Request {
+                return GET(baseUrl + chapter.url, headers)
+            }
+
+            override fun pageListParse(response: Response)
