@@ -1,0 +1,45 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+ext {
+    extName = 'Ikigai'
+    pkgNameSuffix = 'es.ikigai'
+    extClass = '.Ikigai'
+    extVersionCode = 1
+    libVersion = '1.2'
+}
+
+android {
+    compileSdkVersion 33
+
+    defaultConfig {
+        minSdkVersion 21
+        targetSdkVersion 33
+        applicationIdSuffix pkgNameSuffix
+        versionCode extVersionCode
+        versionName "1.0.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compileOnly 'com.github.inorichi.injekt:injekt-core:65b0440'
+    compileOnly 'com.squareup.okhttp3:okhttp:4.10.0'
+    compileOnly 'org.jsoup:jsoup:1.15.3'
+    compileOnly 'com.github.aritraroy:UltimateAndroidReference:2.0'
+    compileOnly 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.7.10'
+    compileOnly 'androidx.preference:preference:1.2.0'
+}
+
+preBuild.dependsOn(":core:preBuild")
+
+apply from: "$rootDir/common.gradle"
